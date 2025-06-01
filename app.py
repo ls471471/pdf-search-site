@@ -8,12 +8,11 @@ PDF_FOLDER = os.path.join('static', 'pdfs')
 app.config['PDF_FOLDER'] = PDF_FOLDER
 
 def clean_filename(name):
-    # 移除標點符號與全形符號
+    # 去掉特殊符號：※、-、空格等等
     return re.sub(r'[^\w\u4e00-\u9fff]', '', name)
 
 @app.route('/', methods=['GET', 'POST'])
-@app.route('/search', methods=['GET', 'POST']) 
-
+@app.route('/search', methods=['GET', 'POST'])  # 加這行
 def index():
     filename = None
     not_found = False
@@ -47,3 +46,4 @@ def get_pdf(filename):
 if __name__ == '__main__':
     import os
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+
