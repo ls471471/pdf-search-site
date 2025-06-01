@@ -1,34 +1,47 @@
-from flask import Flask, render_template, request, send_from_directory
+from flask import Flask, render_template, request, send_from_directory, abort
 import os
-import json
+import re
 
 app = Flask(__name__)
-PDF_FOLDER = 'static/pdfs'
 
-try:
-    with open('name_map.json', 'r', encoding='utf-8') as f:
-        name_map = {entry['name']: entry['file'] for entry in json.load(f)}
-except FileNotFoundError:
-    name_map = {}
+PDF_FOLDER = os.path.join('static', 'pdfs')
+app.config['PDF_FOLDER'] = PDF_FOLDER
 
-@app.route('/')
+def clean_filename(name):
+    # 移除標點符號與全形符號
+    return re.sub(r'[^\w\u4e00-\u9fff]', '', name)
+
+@app.route('/', methods=['GET', 'POST'])
 def index():
-    return render_template('index.html')
+    filename = None
+    not_found = False
 
-@app.route('/search', methods=['POST'])
-def search():
-    name = request.form['name'].strip()
-    filename = name_map.get(name, f"{name}.pdf")
-    file_path = os.path.join(PDF_FOLDER, filename)
+    if request.method == 'POST':
+        name_input = request.form['name'].strip()
+        name_input_clean = clean_filename(name_input)
 
-    if os.path.exists(file_path):
-        return render_template('viewer.html', name=name, filename=filename)
-    else:
-        return f"找不到 {name} 的個案費用表", 404
+        matched = None
 
-@app.route('/pdf/<filename>')
-def serve_pdf(filename):
-    return send_from_directory(PDF_FOLDER, filename)
+        for file in os.listdir(PDF_FOLDER):
+            file_clean = clean_filename(file)
+            if name_input_clean in file_clean:
+                matched = file
+                break
 
-if __name__ == "__main__":
+        if matched:
+            filename = matched
+        else:
+            not_found = True
+
+    return render_template('index.html', filename=filename, not_found=not_found)
+
+@app.route('/pdf/<path:filename>')
+def get_pdf(filename):
+    try:
+        return send_from_directory(PDF_FOLDER, filename)
+    except:
+        abort(404)
+
+if __name__ == '__main__':
+    import os
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
