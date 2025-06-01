@@ -12,6 +12,8 @@ def clean_filename(name):
     return re.sub(r'[^\w\u4e00-\u9fff]', '', name)
 
 @app.route('/', methods=['GET', 'POST'])
+@app.route('/search', methods=['GET', 'POST']) 
+
 def index():
     filename = None
     not_found = False
